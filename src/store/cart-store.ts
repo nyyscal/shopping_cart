@@ -24,23 +24,39 @@ const initialCartItems: CartItemType[] = [];
 
 export const useCartStore = create<CartState>((set, get) => ({
   items: initialCartItems,
-  addItem: (item: CartItemType) => {
-    const existingItem = get().items.find(i => i.id === item.id);
-    if (existingItem) {
-      set(state => ({
-        items: state.items.map(i =>
-          i.id === item.id
-            ? {
-                ...i,
-                quantity: Math.min(i.quantity + item.quantity, i.maxQuantity),
-              }
-            : i
-        ),
-      }));
-    } else {
-      set(state => ({ items: [...state.items, item] }));
-    }
-  },
+ addItem: (item: CartItemType) => {
+  const existingItem = get().items.find(i => i.id === item.id);
+
+  if (existingItem) {
+    set(state => ({
+      items: state.items.map(i =>
+        i.id === item.id
+          ? {
+              ...i,
+              quantity: Math.min(
+                (i.quantity ?? 0) + (item.quantity ?? 1), // ✅ safe fallback
+                i.maxQuantity ?? (i.quantity ?? 9999)     // ✅ fallback if maxQuantity missing
+              ),
+              price: i.price ?? 0, // ✅ avoid undefined price
+            }
+          : i
+      ),
+    }));
+  } else {
+    set(state => ({
+      items: [
+        ...state.items,
+        {
+          ...item,
+          quantity: item.quantity ?? 1,   // ✅ default to 1
+          price: item.price ?? 0,         // ✅ default to 0
+          maxQuantity: item.maxQuantity ?? 9999, // ✅ default high limit
+        },
+      ],
+    }));
+  }
+},
+
   removeItem: (id: number) =>
     set(state => ({ items: state.items.filter(item => item.id !== id) })),
   incrementItem: (id: number) =>
@@ -61,13 +77,16 @@ export const useCartStore = create<CartState>((set, get) => ({
           : item
       ),
     })),
-  getTotalPrice: () => {
-    const { items } = get();
+getTotalPrice: () => {
+  const { items } = get();
+  return items
+    .reduce(
+      (total, item) => total + (item.price ?? 0) * (item.quantity ?? 0),
+      0
+    )
+    .toFixed(2);
+},
 
-    return items
-      .reduce((total, item) => total + item.price * item.quantity, 0)
-      .toFixed(2);
-  },
   getItemCount: () => {
     const { items } = get();
     return items.reduce((count, item) => count + item.quantity, 0);
