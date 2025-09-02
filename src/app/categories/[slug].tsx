@@ -10,12 +10,14 @@ const Category = () => {
 
   const category = CATEGORIES.find(category => category.slug === slug)
 
-  const products = PRODUCTS.filter(product => product.category.slug === slug)
+  if(!category) return <Redirect href="/404"/>
 
+  const products = PRODUCTS.filter(product => product.category.slug === slug)
+  
   return <View style={styles.container}>
-    <Stack.Screen options={{title: category?.name}}/>
+    <Stack.Screen options={{title: category.name}}/>
     <Image source={{uri: category?.imageUrl}} style={styles.categoryImage}/>
-    <Text style={styles.categoryName}>{category?.name}</Text>
+    <Text style={styles.categoryName}>{category.name}</Text>
     <FlatList data={products}
     keyExtractor={item=>item.id.toString()}
     renderItem={({item})=> <ProductListItem product={item}/>}
@@ -24,13 +26,6 @@ const Category = () => {
     contentContainerStyle={styles.productsList}
     />
   </View>
-
-  if(!category) return <Redirect href="/404"/>
-  return (
-    <View>
-      <Text>Category</Text>
-    </View>
-  )
 }
 
 export default Category
